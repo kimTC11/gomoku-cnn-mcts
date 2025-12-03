@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Draw file
+/PlotNeuralNet/
+
 # C extensions
 *.so
 
@@ -115,11 +118,27 @@ dmypy.json
 # Weights & Biases
 wandb/
 
-# Model checkpoints
+# Model checkpoints and training artifacts
 temp/
 checkpoints/
 *.pth
 *.pth.tar
+*.pkl
+
+# Game-specific folders
+3x3/models/
+3x3/data/
+5x5/temp5x5/
+5x5/wandb/
+10x10/temp/
+10x10/wandb/
+
+# Log files
+*.log
+ml3x3.log
+alphazero.log
+alphazero5x5.log
+alphazero10x10.log
 
 # macOS
 .DS_Store
@@ -136,5 +155,4 @@ Thumbs.db
 *.swp
 *.swo
 
-# Logs
-*.log
+# Additional logs (removed duplicate)

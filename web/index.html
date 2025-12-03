@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe AI Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            line-height: 1.2;
+        }
+
+        .config-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .config-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        input, select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: clamp(14px, 2.5vw, 16px);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-hint {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-hint:hover {
+            background: #138496;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(23, 162, 184, 0.4);
+        }
+
+        .btn-hint:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .board-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+            width: 100%;
+            overflow: auto;
+        }
+
+        .board {
+            display: grid;
+            gap: 2px;
+            background: #333;
+            padding: 2px;
+            border-radius: 5px;
+            max-width: 100%;
+            margin: 0 auto;
+            width: fit-content;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border: none;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .cell.small {
+            width: 40px;
+            height: 40px;
+            font-size: 16px;
+        }
+
+        .cell:hover:not(.disabled) {
+            background: #f0f0f0;
+            transform: scale(1.05);
+        }
+
+        .cell.disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .cell.x {
+            color: #e74c3c;
+        }
+
+        .cell.o {
+            color: #3498db;
+        }
+
+        .cell.hint-cell {
+            background: #ffeb3b !important;
+            animation: pulse 0.5s ease-in-out;
+            box-shadow: 0 0 15px rgba(255, 235, 59, 0.8);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Tablet and medium screens */
+        @media (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+
+            .container {
+                padding: 15px;
+                border-radius: 15px;
+            }
+
+            .config-panel {
+                gap: 10px;
+                padding: 12px;
+            }
+
+            .button-group {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            button {
+                padding: 10px 16px;
+            }
+
+            .cell {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+
+            .cell.small {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+
+            .status {
+                font-size: 16px;
+                padding: 12px;
+            }
+        }
+
+        /* Mobile phones */
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                padding: 12px;
+                border-radius: 12px;
+            }
+
+            .config-panel {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                padding: 10px;
+                margin-bottom: 15px;
+            }
+
+            input, select {
+                padding: 8px;
+                font-size: 14px;
+            }
+
+            .button-group {
+                flex-direction: column;
+                width: 100%;
+                gap: 8px;
+            }
+
+            button {
+                width: 100%;
+                padding: 12px;
+                font-size: 15px;
+            }
+
+            .board-container {
+                margin: 15px 0;
+            }
+
+            .cell {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+
+            .cell.small {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+
+            .status {
+                font-size: 14px;
+                padding: 10px;
+                margin-top: 15px;
+            }
+        }
+
+        /* Small mobile phones (iPhone SE, etc) */
+        @media (max-width: 375px) {
+            .cell {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+
+            .cell.small {
+                width: 24px;
+                height: 24px;
+                font-size: 11px;
+            }
+
+            .board {
+                gap: 1px;
+            }
+        }
+
+        /* Large desktop screens */
+        @media (min-width: 1200px) {
+            .container {
+                padding: 40px;
+            }
+
+            .cell {
+                width: 55px;
+                height: 55px;
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Gomoku AI Demo</h1>
+        
+        <div class="config-panel">
+            <div class="config-item">
+                <label for="boardSize">Board Size:</label>
+                <select id="boardSize" onchange="onBoardSizeChange()">
+                    <option value="3">3x3 (Win: 3, AI First)</option>
+                    <option value="5">5x5 (Win: 5)</option>
+                    <option value="10" selected>10x10 (Win: 5)</option>
+                </select>
+            </div>
+            <div class="config-item" id="firstPlayerContainer">
+                <label for="firstPlayer">Who Goes First:</label>
+                <select id="firstPlayer">
+                    <option value="1">You (X)</option>
+                    <option value="-1">AI (O)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="newGame()">🎮 New Game</button>
+            <button id="hintButton" class="btn-hint" onclick="getHint()" style="display: none;">💡 Get AI Hint</button>
+        </div>
+
+        <div class="board-container">
+            <div id="board" class="board"></div>
+            <div id="status" class="status info" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration - Connect to local Flask server (both served through same ngrok tunnel)
+        const API_BASE_URL = '';
+        
+        let board = [];
+        let boardSize = 10;  // Default to 10x10
+        let winLength = 5;   // Default to 5 in a row
+        let currentPlayer = 1;  // 1 or -1 (matching game.py: 1=white, -1=black)
+        let gameEnded = false;
+        let aiPlayer = -1;      // AI plays as player -1 by default
+        let firstPlayer = 1;    // Player 1 goes first by default
+        let lastMoveRow = null;
+        let lastMoveCol = null;
+        let gameMode = 'alphazero';  // 'ml3x3' or 'alphazero'
+
+        function onBoardSizeChange() {
+            const size = parseInt(document.getElementById('boardSize').value);
+            
+            // Configure based on board size
+            if (size === 3) {
+                // 3x3: Use ML API, win=3, AI goes first (locked)
+                gameMode = 'ml3x3';
+                winLength = 3;
+                firstPlayer = -1;  // AI goes first
+                aiPlayer = -1;
+                document.getElementById('firstPlayer').value = '-1';
+                document.getElementById('firstPlayer').disabled = true;
+                document.getElementById('firstPlayerContainer').style.opacity = '0.5';
+            } else if (size === 5) {
+                // 5x5: AlphaZero, win=5, anyone can go first
+                gameMode = 'alphazero5x5';
+                winLength = 5;
+                document.getElementById('firstPlayer').disabled = false;
+                document.getElementById('firstPlayerContainer').style.opacity = '1';
+                firstPlayer = parseInt(document.getElementById('firstPlayer').value);
+                aiPlayer = -1;  // AI is always player -1 (O)
+            } else if (size === 10) {
+                // 10x10: AlphaZero, win=5, anyone can go first
+                gameMode = 'alphazero10x10';
+                winLength = 5;  // Changed from 10 to 5
+                document.getElementById('firstPlayer').disabled = false;
+                document.getElementById('firstPlayerContainer').style.opacity = '1';
+                firstPlayer = parseInt(document.getElementById('firstPlayer').value);
+                aiPlayer = -1;  // AI is always player -1 (O)
+            }
+            
+            boardSize = size;
+        }
+
+        function initBoard() {
+            // Trigger board size change to set correct configurations
+            onBoardSizeChange();
+            
+            currentPlayer = firstPlayer;
+            gameEnded = false;
+
+            // Initialize empty board (0 = empty, 1 = player1, -1 = player2)
+            board = Array(boardSize).fill(null).map(() => Array(boardSize).fill(0));
+            lastMoveRow = null;
+            lastMoveCol = null;
+            renderBoard();
+
+            const playerName = firstPlayer === 1 ? 'Player 1 (You)' : 'Player 2 (AI)';
+            showStatus(`Game started! ${playerName} goes first. Board: ${boardSize}x${boardSize}, Win: ${winLength} in a row`, 'info');
+
+            // Show/hide hint button based on game mode
+            const hintButton = document.getElementById('hintButton');
+            if (gameMode === 'alphazero5x5' || gameMode === 'alphazero10x10') {
+                hintButton.style.display = 'inline-block';
+            } else {
+                hintButton.style.display = 'none';
+            }
+
+            if (firstPlayer === aiPlayer) {
+                setTimeout(() => getAIMove(), 500);
+            }
+        }
+
+        function renderBoard() {
+            const boardElement = document.getElementById('board');
+            boardElement.style.gridTemplateColumns = `repeat(${boardSize}, 1fr)`;
+            boardElement.innerHTML = '';
+
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    const cell = document.createElement('button');
+                    cell.className = 'cell';
+                    
+                    // Make cells smaller for larger boards
+                    if (boardSize >= 10) {
+                        cell.classList.add('small');
+                    }
+                    
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    
+                    // 1 = player 1 (X), -1 = player 2 (O), 0 = empty
+                    if (board[i][j] === 1) {
+                        cell.textContent = 'X';
+                        cell.classList.add('x');
+                        cell.disabled = true;
+                        cell.classList.add('disabled');
+                    } else if (board[i][j] === -1) {
+                        cell.textContent = 'O';
+                        cell.classList.add('o');
+                        cell.disabled = true;
+                        cell.classList.add('disabled');
+                    }
+
+                    if (!gameEnded && board[i][j] === 0) {
+                        cell.addEventListener('click', () => makeMove(i, j));
+                    } else {
+                        cell.classList.add('disabled');
+                    }
+
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        function makeMove(row, col) {
+            if (gameEnded || board[row][col] !== 0) return;
+            if (currentPlayer === aiPlayer) {
+                showStatus('Wait for AI to make a move!', 'warning');
+                return;
+            }
+
+            board[row][col] = currentPlayer;
+            lastMoveRow = row;
+            lastMoveCol = col;
+            const playerSymbol = currentPlayer === 1 ? 'X' : 'O';
+            console.log(`Player ${playerSymbol} made move at row=${lastMoveRow}, col=${lastMoveCol}`);
+            renderBoard();
+
+            if (checkWin(row, col)) {
+                gameEnded = true;
+                showStatus(`🎉 ${playerSymbol} wins!`, 'success');
+                return;
+            }
+
+            if (checkDraw()) {
+                gameEnded = true;
+                showStatus('🤝 It\'s a draw!', 'info');
+                return;
+            }
+
+            currentPlayer = -currentPlayer;  // Switch player (1 to -1 or -1 to 1)
+            
+            if (currentPlayer === aiPlayer) {
+                showStatus('AI is thinking...', 'info');
+                setTimeout(() => getAIMove(), 500);
+            } else {
+                const nextSymbol = currentPlayer === 1 ? 'X' : 'O';
+                showStatus(`Your turn (${nextSymbol})`, 'info');
+            }
+        }
+
+        async function getAIMove() {
+            if (gameEnded) return;
+
+            showStatus('AI is thinking...', 'info');
+            
+            try {
+                const matrix = JSON.stringify(board);
+                const aiPlayerStr = aiPlayer.toString();
+                console.log('Sending board to API:', matrix);
+                console.log(`Game mode: ${gameMode}, Board size: ${boardSize}, Win length: ${winLength}, AI player: ${aiPlayerStr}`);
+                console.log(`Last move tracked: row=${lastMoveRow}, col=${lastMoveCol}`);
+                
+                // Route to correct API based on game mode
+                let url;
+                if (gameMode === 'ml3x3') {
+                    // Use 3x3 ML API endpoint
+                    url = `${API_BASE_URL}/api/3x3/move?boardSize=${boardSize}&nextMove=${aiPlayerStr}&matrix=${encodeURIComponent(matrix)}`;
+                } else if (gameMode === 'alphazero5x5') {
+                    // Use 5x5 AlphaZero API endpoint
+                    url = `${API_BASE_URL}/api/5x5/move?boardSize=${boardSize}&winLength=${winLength}&nextMove=${aiPlayerStr}&matrix=${encodeURIComponent(matrix)}`;
+                    if (lastMoveRow !== null && lastMoveCol !== null) {
+                        url += `&last_move_row=${lastMoveRow}&last_move_col=${lastMoveCol}`;
+                        console.log(`Including last move parameters: last_move_row=${lastMoveRow}, last_move_col=${lastMoveCol}`);
+                    } else {
+                        console.log('No last move available (first move or reset)');
+                    }
+                } else if (gameMode === 'alphazero10x10') {
+                    // Use 10x10 AlphaZero API endpoint
+                    url = `${API_BASE_URL}/api/move?boardSize=${boardSize}&winLength=${winLength}&nextMove=${aiPlayerStr}&matrix=${encodeURIComponent(matrix)}`;
+                    if (lastMoveRow !== null && lastMoveCol !== null) {
+                        url += `&last_move_row=${lastMoveRow}&last_move_col=${lastMoveCol}`;
+                        console.log(`Including last move parameters: last_move_row=${lastMoveRow}, last_move_col=${lastMoveCol}`);
+                    } else {
+                        console.log('No last move available (first move or reset)');
+                    }
+                }
+                console.log('Full API URL:', url);
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                if (response.ok && data.row !== undefined && data.col !== undefined) {
+                    const row = data.row;
+                    const col = data.col;
+                    console.log(`AI move received: row=${row}, col=${col}, current board state:`, board);
+                    
+                    if (board[row][col] === 0) {
+                        board[row][col] = aiPlayer;
+                        lastMoveRow = row;
+                        lastMoveCol = col;
+                        const aiSymbol = aiPlayer === 1 ? 'X' : 'O';
+                        console.log(`AI (${aiSymbol}) made move at row=${lastMoveRow}, col=${lastMoveCol}`);
+                        console.log('Board updated with AI move:', board);
+                        renderBoard();
+
+                        if (checkWin(row, col)) {
+                            gameEnded = true;
+                            showStatus(`🤖 AI (${aiSymbol}) wins!`, 'error');
+                            return;
+                        }
+
+                        if (checkDraw()) {
+                            gameEnded = true;
+                            showStatus('🤝 It\'s a draw!', 'info');
+                            return;
+                        }
+
+                        currentPlayer = -currentPlayer;
+                        const nextSymbol = currentPlayer === 1 ? 'X' : 'O';
+                        showStatus(`Your turn (${nextSymbol})`, 'info');
+                    } else {
+                        showStatus(`AI tried to make an invalid move. Please reset. (Debug: current state: ${board[row][col]} col: ${col} row: ${row})`, 'error');
+                    }
+                } else {
+                    showStatus('Error: ' + (data.error || 'Failed to get AI move'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                let errorMsg = 'Error connecting to API: ' + error.message;
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMsg = 'Cannot connect to server. Make sure Python API server is running on port i change the server port is 5002, but why the terminal is not running. Run: python api_server.py';
+                }
+                showStatus(errorMsg, 'error');
+            }
+        }
+
+        function checkWin(row, col) {
+            const player = board[row][col];
+            if (player === 0) return false;
+
+            // Check row
+            let count = 1;
+            for (let c = col - 1; c >= 0 && board[row][c] === player; c--) count++;
+            for (let c = col + 1; c < boardSize && board[row][c] === player; c++) count++;
+            if (count >= winLength) return true;
+
+            // Check column
+            count = 1;
+            for (let r = row - 1; r >= 0 && board[r][col] === player; r--) count++;
+            for (let r = row + 1; r < boardSize && board[r][col] === player; r++) count++;
+            if (count >= winLength) return true;
+
+            // Check diagonal (top-left to bottom-right)
+            count = 1;
+            for (let r = row - 1, c = col - 1; r >= 0 && c >= 0 && board[r][c] === player; r--, c--) count++;
+            for (let r = row + 1, c = col + 1; r < boardSize && c < boardSize && board[r][c] === player; r++, c++) count++;
+            if (count >= winLength) return true;
+
+            // Check diagonal (top-right to bottom-left)
+            count = 1;
+            for (let r = row - 1, c = col + 1; r >= 0 && c < boardSize && board[r][c] === player; r--, c++) count++;
+            for (let r = row + 1, c = col - 1; r < boardSize && c >= 0 && board[r][c] === player; r++, c--) count++;
+            if (count >= winLength) return true;
+
+            return false;
+        }
+
+        function checkDraw() {
+            return board.every(row => row.every(cell => cell !== 0));
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+            statusElement.style.display = 'block';
+        }
+
+        function newGame() {
+            initBoard();
+        }
+
+        async function getHint() {
+            if (gameEnded) {
+                showStatus('Game has ended. Start a new game!', 'warning');
+                return;
+            }
+
+            if (gameMode === 'ml3x3') {
+                showStatus('Hints are only available for 5x5 and 10x10', 'warning');
+                return;
+            }
+
+            // Check if it's human player's turn
+            if (currentPlayer === aiPlayer) {
+                showStatus('Wait for your turn to get a hint!', 'warning');
+                return;
+            }
+
+            showStatus('💡 AI is calculating the best move...', 'info');
+            
+            try {
+                const matrix = JSON.stringify(board);
+                const humanPlayerStr = currentPlayer.toString();
+                
+                // Use the appropriate API endpoint based on board size
+                let url;
+                if (gameMode === 'alphazero5x5') {
+                    url = `${API_BASE_URL}/api/5x5/move?boardSize=${boardSize}&winLength=${winLength}&nextMove=${humanPlayerStr}&matrix=${encodeURIComponent(matrix)}`;
+                } else if (gameMode === 'alphazero10x10') {
+                    url = `${API_BASE_URL}/api/move?boardSize=${boardSize}&winLength=${winLength}&nextMove=${humanPlayerStr}&matrix=${encodeURIComponent(matrix)}`;
+                }
+                
+                if (lastMoveRow !== null && lastMoveCol !== null) {
+                    url += `&last_move_row=${lastMoveRow}&last_move_col=${lastMoveCol}`;
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (response.ok && data.row !== undefined && data.col !== undefined) {
+                    const row = data.row;
+                    const col = data.col;
+                    
+                    // Highlight the suggested move
+                    const cells = document.querySelectorAll('.cell');
+                    cells.forEach(cell => cell.classList.remove('hint-cell'));
+                    
+                    const hintCell = cells[row * boardSize + col];
+                    hintCell.classList.add('hint-cell');
+                    
+                    showStatus(`💡 AI suggests: Row ${row + 1}, Column ${col + 1}`, 'success');
+                    
+                    // Remove highlight after 3 seconds
+                    setTimeout(() => {
+                        hintCell.classList.remove('hint-cell');
+                    }, 3000);
+                } else {
+                    showStatus('❌ Could not get hint: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Error getting hint: ' + error.message, 'error');
+                console.error('Hint error:', error);
+            }
+        }
+
+        // Check API connection on page load
+        async function checkAPIConnection() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                if (data.status === 'ok' && data.apiServer.reachable) {
+                    console.log('✓ API server is connected');
+                } else {
+                    showStatus('⚠ Warning: API server may not be reachable. Check console for details.', 'warning');
+                    console.warn('API server status:', data);
+                }
+            } catch (error) {
+                showStatus('⚠ Warning: Cannot check API server status. Make sure Python API server is running on port 5001.', 'warning');
+                console.error('Error checking API status:', error);
+            }
+        }
+
+        // Initialize on page load
+        initBoard();
+        checkAPIConnection();
+    </script>
+</body>
+</html>

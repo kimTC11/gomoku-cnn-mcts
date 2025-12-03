@@ -21,6 +21,17 @@ A deep reinforcement learning implementation of Gomoku (Five-in-a-Row) using Alp
 
 ### Installation
 
+# Terminal 1: API Server
+cd /Users/kimcuong/source/python/tictactoe-cnn-mcts/10x10
+uv run api_server.py
+
+# Terminal 2: Proxy Server  
+cd /Users/kimcuong/source/python/tictactoe-cnn-mcts/10x10
+uv run proxy_server.py
+
+# Terminal 3: Ngrok
+ngrok http 8080
+
 ```bash
 # Clone the repository
 git clone https://github.com/kimTC11/gomoku-cnn-mcts.git

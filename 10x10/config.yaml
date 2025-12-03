@@ -1,0 +1,57 @@
+# Training parameters
+training:
+  epochs: 10
+  batch_size: 256
+  num_iterations: 200  # numIters
+  num_episodes: 100    # numEps
+  max_queue_length: 200000  # maxlenOfQueue
+  num_iters_history: 20     # numItersForTrainExamplesHistory
+  update_threshold: 0.55
+  arena_compare: 40
+  temp_threshold: 15
+
+# Neural Network parameters
+network:
+  num_channels: 512
+  dropout: 0.1
+  learning_rate:
+    min: 1.0e-4
+    max: 1.0e-2
+  grad_clip: 1.0
+
+# MCTS parameters
+mcts:
+  num_sims: 800  # numMCTSSims
+  cpuct: 4.0
+
+# Game parameters
+game:
+  board_size: 10
+
+# System parameters
+system:
+  cuda: False  # Will be overridden by torch.cuda.is_available()
+  mps: True   # Enable MPS (Apple Silicon GPU) - Will be overridden by torch.backends.mps.is_available()
+  checkpoint_dir: "./temp"
+  load_model: True
+  load_folder_file: ["./temp", "best.pth.tar"] 
+
+
+# optimization:  
+#   # Batch size for neural network predictions during MCTS  
+#   prediction_batch_size: 32  
+    
+#   # Maximum number of MCTS states to keep in memory  
+#   max_mcts_states: 100000  
+    
+#   # Number of worker processes for parallel self-play  
+#   num_workers: 4  
+    
+#   # Enable pin_memory for faster CPU to GPU transfers  
+#   pin_memory: true  
+    
+#   # Enable asynchronous MCTS with virtual loss (advanced)  
+#   async_mcts: false    
+    
+#   # Virtual loss value for async MCTS to prevent thread contention  
+#   virtual_loss: 3

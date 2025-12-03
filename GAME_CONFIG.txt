@@ -1,0 +1,37 @@
+Configuration Summary for Gomoku Game:
+
+✅ 3x3 Board:
+   - Win Condition: 3 in a row
+   - API: ML models (port 5003) via /api/3x3/move
+   - Who Goes First: AI ONLY (locked to AI first)
+   - Game Mode: ml3x3
+
+✅ 5x5 Board:
+   - Win Condition: 5 in a row
+   - API: AlphaZero (port 5002) via /api/move
+   - Who Goes First: Anyone (user can choose)
+   - Game Mode: alphazero
+
+✅ 10x10 Board:
+   - Win Condition: 5 in a row (NOT 10)
+   - API: AlphaZero (port 5002) via /api/move
+   - Who Goes First: Anyone (user can choose)
+   - Game Mode: alphazero
+
+Game Logic Flow:
+1. User selects board size from dropdown
+2. onBoardSizeChange() automatically sets:
+   - gameMode ('ml3x3' or 'alphazero')
+   - winLength (3, 5, or 5)
+   - firstPlayer permissions (locked or free)
+3. initBoard() calls onBoardSizeChange() to apply settings
+4. getAIMove() routes to correct API based on gameMode:
+   - ml3x3 → /api/3x3/move (ML models)
+   - alphazero → /api/move (MCTS + Neural Net)
+
+Starting Servers:
+Terminal 1: cd 3x3 && source ../.venv/bin/activate && python api_server.py
+Terminal 2: cd 10x10 && source ../.venv/bin/activate && python api_server.py
+Terminal 3: cd 10x10 && source ../.venv/bin/activate && python proxy_server.py
+
+Access: http://localhost:8080

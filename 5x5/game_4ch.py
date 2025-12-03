@@ -97,16 +97,34 @@ class GomokuGame:
         return self.n * self.n
 
     def getNextState(self, board, player, action):
+        # Handle 4-channel input - extract 2D board
+        if board.ndim == 3:  # 4-channel case
+            # Reconstruct 2D board from channels
+            board_2d = np.zeros((board.shape[1], board.shape[2]))
+            board_2d[board[0] == 1] = 1   # Current player stones
+            board_2d[board[1] == 1] = -1  # Opponent stones
+        else:  # 2D case
+            board_2d = board
+            
         b = Board(self.n)
-        b.pieces = np.copy(board)
+        b.pieces = np.copy(board_2d)
         # Fix: Ensure consistent coordinate transformation
         move = (action // self.n, action % self.n)  # This gives (x, y)
         b.execute_move(move, player)
         return (b.pieces, -player)
 
     def getValidMoves(self, board, player):
+        # Handle 4-channel input - extract 2D board
+        if board.ndim == 3:  # 4-channel case
+            # Reconstruct 2D board from channels
+            board_2d = np.zeros((board.shape[1], board.shape[2]))
+            board_2d[board[0] == 1] = 1   # Current player stones
+            board_2d[board[1] == 1] = -1  # Opponent stones
+        else:  # 2D case
+            board_2d = board
+            
         b = Board(self.n)
-        b.pieces = np.copy(board)
+        b.pieces = np.copy(board_2d)
         valids = [0] * self.getActionSize()
         legalMoves = b.get_legal_moves(player)
         for x, y in legalMoves:
@@ -115,8 +133,17 @@ class GomokuGame:
         return np.array(valids)
 
     def getGameEnded(self, board, player):
+        # Handle 4-channel input - extract 2D board
+        if board.ndim == 3:  # 4-channel case
+            # Reconstruct 2D board from channels
+            board_2d = np.zeros((board.shape[1], board.shape[2]))
+            board_2d[board[0] == 1] = 1   # Current player stones
+            board_2d[board[1] == 1] = -1  # Opponent stones
+        else:  # 2D case
+            board_2d = board
+            
         b = Board(self.n)
-        b.pieces = np.copy(board)
+        b.pieces = np.copy(board_2d)
 
         if b.is_win(player):
             return 1
@@ -127,33 +154,82 @@ class GomokuGame:
         return None
 
     def getCanonicalForm(self, board, player):
-        return player * board
+        """
+        Convert board to 4-channel representation for neural network:
+        Channel 0: Current player stones (1 where current player has pieces)
+        Channel 1: Opponent stones (1 where opponent has pieces)  
+        Channel 2: Valid moves (1 where moves are legal)
+        Channel 3: Player turn indicator (all 1s for current player)
+        """
+        n = self.n
+        
+        # Initialize 4-channel representation
+        canonical = np.zeros((4, n, n), dtype=np.float32)
+        
+        # Channel 0: Current player stones
+        canonical[0] = (board == player).astype(np.float32)
+        
+        # Channel 1: Opponent stones  
+        canonical[1] = (board == -player).astype(np.float32)
+        
+        # Channel 2: Valid moves
+        valid_moves = self.getValidMoves(board, player)
+        canonical[2] = np.reshape(valid_moves, (n, n))
+        
+        # Channel 3: Player indicator (all 1s for current player turn)
+        canonical[3] = np.ones((n, n), dtype=np.float32)
+        
+        return canonical
 
     def getSymmetries(self, board, pi):
         # Gomoku's symmetries include rotation and reflection
+        # board now has shape (4, n, n) for 4-channel representation
         assert len(pi) == self.n**2
         pi_board = np.reshape(pi, (self.n, self.n))
         symmetries = []
 
         for i in range(1, 5):
             for j in [True, False]:
-                newB = np.rot90(board, i)
+                # Handle 4-channel board rotation
+                if board.ndim == 3:  # 4-channel case (4, n, n)
+                    newB = np.rot90(board, i, axes=(1, 2))  # Rotate along spatial dimensions
+                else:  # Original 2D case for backward compatibility
+                    newB = np.rot90(board, i)
+                    
                 newPi = np.rot90(pi_board, i)
                 if j:
-                    newB = np.fliplr(newB)
+                    if board.ndim == 3:
+                        newB = np.flip(newB, axis=2)  # Flip along width dimension
+                    else:
+                        newB = np.fliplr(newB)
                     newPi = np.fliplr(newPi)
                 symmetries += [(newB, newPi.ravel())]
         return symmetries
 
     def stringRepresentation(self, board):
-        return board.tobytes()
+        # Handle both 2D and 4-channel board representations
+        if board.ndim == 3:  # 4-channel case
+            # Use first 2 channels (current player and opponent) for unique representation
+            key_channels = board[:2]  # Shape: (2, n, n)
+            return key_channels.tobytes()
+        else:  # Original 2D case
+            return board.tobytes()
 
     @staticmethod
     def display(board, player1_first=True):
         """Update the GUI display"""
+        # Handle both 4-channel and 2D board representations
+        if board.ndim == 3:  # 4-channel case
+            # Reconstruct 2D board from channels for display
+            display_board = np.zeros((board.shape[1], board.shape[2]))
+            display_board[board[0] == 1] = 1   # Current player stones
+            display_board[board[1] == 1] = -1  # Opponent stones
+        else:  # Original 2D case
+            display_board = board
+            
         if not hasattr(GomokuGame, 'gui'):
-            GomokuGame.gui = GomokuGUI(len(board), player1_first)
-        GomokuGame.gui.draw_board(board, player1_first)
+            GomokuGame.gui = GomokuGUI(len(display_board), player1_first)
+        GomokuGame.gui.draw_board(display_board, player1_first)
         pygame.display.flip()
 
 
@@ -291,11 +367,14 @@ class RandomGomokuPlayer:
         self.game = game
 
     def play(self, board):
-        a = np.random.randint(self.game.getActionSize())
-        valids = self.game.getValidMoves(board, 1)
-        while valids[a] != 1:
-            a = np.random.randint(self.game.getActionSize())
-        return a
+        # Handle 4-channel input
+        if board.ndim == 3:  # 4-channel case
+            valid_moves = board[2].flatten()
+        else:  # 2D case
+            valid_moves = self.game.getValidMoves(board, 1)
+            
+        valid_actions = np.where(valid_moves == 1)[0]
+        return np.random.choice(valid_actions)
 
 
 class GreedyGomokuPlayer:
@@ -303,16 +382,32 @@ class GreedyGomokuPlayer:
         self.game = game
 
     def play(self, board):
-        valids = self.game.getValidMoves(board, 1)
-        candidates = []
-        for a in range(self.game.getActionSize()):
-            if valids[a] == 0:
-                continue
-            nextBoard, _ = self.game.getNextState(board, 1, a)
-            score = self.game.getScore(nextBoard, 1)
-            candidates += [(-score, a)]
-        candidates.sort()
-        return candidates[0][1]
+        # Handle 4-channel input - reconstruct 2D board for evaluation
+        if board.ndim == 3:  # 4-channel case
+            board_2d = np.zeros((board.shape[1], board.shape[2]))
+            board_2d[board[0] == 1] = 1   # Current player
+            board_2d[board[1] == 1] = -1  # Opponent
+            valid_moves = board[2].flatten()
+        else:  # 2D case
+            board_2d = board
+            valid_moves = self.game.getValidMoves(board, 1)
+            
+        valid_actions = np.where(valid_moves == 1)[0]
+        
+        # Simple greedy strategy: prefer center positions
+        best_action = valid_actions[0]
+        best_score = -1
+        
+        center = self.game.n // 2
+        for action in valid_actions:
+            row, col = divmod(action, self.game.n)
+            # Score based on distance from center (closer is better)
+            score = 1.0 / (1.0 + abs(row - center) + abs(col - center))
+            if score > best_score:
+                best_score = score
+                best_action = action
+                
+        return best_action
 
 
 class HumanGomokuPlayer:
@@ -321,8 +416,20 @@ class HumanGomokuPlayer:
         self.gui = GomokuGUI(game.n)
 
     def play(self, board):
-        valid = self.game.getValidMoves(board, 1)
-        self.gui.draw_board(board)
+        # Handle 4-channel input - convert to 2D for display and validation
+        if board.ndim == 3:  # 4-channel case
+            # Reconstruct 2D board from channels for display
+            display_board = np.zeros((board.shape[1], board.shape[2]))
+            display_board[board[0] == 1] = 1   # Current player stones
+            display_board[board[1] == 1] = -1  # Opponent stones
+            # Get valid moves from channel 2
+            valid_moves_2d = board[2]
+            valid = valid_moves_2d.flatten()
+        else:  # 2D case
+            display_board = board
+            valid = self.game.getValidMoves(board, 1)
+            
+        self.gui.draw_board(display_board)
         
         while True:
             for event in pygame.event.get():
@@ -389,13 +496,10 @@ class Arena:
                 print("Turn ", str(it), "Player ", str(curPlayer))
                 self.display(board, self.player1_first)  # Pass player order information
             
-            action = players[curPlayer + 1](
-                self.game.getCanonicalForm(board, curPlayer)
-            )
+            canonical_board = self.game.getCanonicalForm(board, curPlayer)
+            action = players[curPlayer + 1](canonical_board)
 
-            valids = self.game.getValidMoves(
-                self.game.getCanonicalForm(board, curPlayer), 1
-            )
+            valids = self.game.getValidMoves(board, curPlayer)
 
             if valids[action] == 0:
                 log.error(f"Action {action} is not valid!")
