@@ -35,7 +35,8 @@ system:
   checkpoint_dir: "./temp"
   load_model: True
   load_folder_file: ["./temp", "best.pth.tar"] 
-
+  num_workers: 4  # Number of worker processes for training multiprocessing (use 1 with GPU)
+  num_threads: 8  # Number of threads for parallel MCTS simulations during gameplay
 
 # optimization:  
 #   # Batch size for neural network predictions during MCTS  

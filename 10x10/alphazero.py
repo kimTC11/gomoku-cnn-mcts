@@ -696,8 +696,8 @@ def main():
                 nnet = NNetWrapper(g, args)
                 nnet.load_checkpoint(args.checkpoint, args.ckpt_file)
                 #can_it_smarter?
-                mcts = MCTS(g, nnet, dotdict({"numMCTSSims": 20000, "cpuct": 1.0}))
-                # mcts = MCTS(g, nnet, dotdict({"numMCTSSims": 800, "cpuct": 1.0}))
+                # mcts = MCTS(g, nnet, dotdict({"numMCTSSims": 20000, "cpuct": 1.0}))
+                mcts = MCTS(g, nnet, dotdict({"numMCTSSims": 800, "cpuct": 1.0}))
                 return lambda x: np.argmax(mcts.getActionProb(x, temp=0))
             else:
                 raise ValueError("not support player name {}".format(name))

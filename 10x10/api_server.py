@@ -35,7 +35,7 @@ else:
 # Override numMCTSSims for web API (training uses config.yaml value)
 from alphazero import dotdict
 web_args = dotdict(vars(args))
-web_args['numMCTSSims'] = 2000  # Reduced from 800 for faster response
+web_args['numMCTSSims'] = 1200  # Reduced from 800 for faster response
 mcts = MCTS(g, nnet, web_args)
 
 @app.route('/api/move', methods=['GET'])
